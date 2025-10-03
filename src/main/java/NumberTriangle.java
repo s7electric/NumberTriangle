@@ -1,4 +1,8 @@
 import java.io.*;
+import java.security.InvalidAlgorithmParameterException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.function.IntSupplier;
 
 /**
  * This is the provided NumberTriangle class to be used in this coding task.
@@ -88,8 +92,50 @@ public class NumberTriangle {
      *
      */
     public int retrieve(String path) {
-        // TODO implement this method
+        if (path.length() == 0) {
+            return this.root;
+        }
+        char direction = path.charAt(0);
+        if (direction == 'l' && this.left != null) {
+            return this.left.retrieve(path.substring(1));
+        } else if (direction == 'r' && this.right != null) {
+            return this.right.retrieve(path.substring(1));
+        }
         return -1;
+    }
+
+
+    /**
+     * Recurse on the this NumberTriangle structure to fill out the branches.
+     * This is a helper method for loadTriangle.
+     */
+    private void fillBranches(ArrayList<int[]> rows, int depth) throws StackOverflowError {
+        // TODO implement this method
+        IntSupplier columnSupplier = () -> {
+            if (depth == 0) {
+                return 0;
+            } else {
+                for (int i = 0; i < rows.get(depth).length; i++) {
+                    if (this.root == rows.get(depth)[i]) {
+                        return i;
+                    }
+                }
+                return -1;
+            }
+        };
+        int column = columnSupplier.getAsInt();
+
+        // System.out.println("depth: " + depth + " root: " + this.root + "column: " + column);
+
+        if (depth + 1 == rows.size() - 1) {
+            return;
+        }
+
+        this.left = new NumberTriangle(rows.get(depth + 1)[column]);
+        this.right = new NumberTriangle(rows.get(depth + 1)[column + 1]);
+
+        this.left.fillBranches(rows, depth + 1);
+        this.right.fillBranches(rows, depth + 1);
     }
 
     /** Read in the NumberTriangle structure from a file.
@@ -109,29 +155,31 @@ public class NumberTriangle {
         InputStream inputStream = NumberTriangle.class.getClassLoader().getResourceAsStream(fname);
         BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
 
+        // create arraylist of int arrays, one for each row of the triangle
+        ArrayList<int[]> rows = new ArrayList<int[]>();
 
-        // TODO define any variables that you want to use to store things
-
-        // will need to return the top of the NumberTriangle,
-        // so might want a variable for that.
-        NumberTriangle top = null;
-
+        // read each line of the file until there are no more lines
         String line = br.readLine();
         while (line != null) {
+            String[] numberStrings = line.split(" ");
 
-            // remove when done; this line is included so running starter code prints the contents of the file
-            System.out.println(line);
-
-            // TODO process the line
+            // process the line and read the numbers into an int arraylist
+            int[] numbersParsed = new int[numberStrings.length];
+            for (int i = 0; i < numberStrings.length; i++) {
+                numbersParsed[i] = Integer.parseInt(numberStrings[i]);
+            }
+            rows.add(numbersParsed);
 
             //read the next line
             line = br.readLine();
         }
+        NumberTriangle top = new NumberTriangle(rows.get(0)[0]);
         br.close();
+        top.fillBranches(rows, 0);
         return top;
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException,StackOverflowError {
 
         NumberTriangle mt = NumberTriangle.loadTriangle("input_tree.txt");
 
@@ -139,6 +187,17 @@ public class NumberTriangle {
         // you can implement NumberTriangle's maxPathSum method if you want to try to solve
         // Problem 18 from project Euler [not for credit]
         mt.maxSumPath();
-        System.out.println(mt.getRoot());
+
+        // sample output from retrieve method
+        System.out.println(mt.retrieve(""));
+        System.out.println(mt.retrieve("l"));
+        System.out.println(mt.retrieve("r"));
+        System.out.println(mt.retrieve("ll"));
+        System.out.println(mt.retrieve("lr"));
+        System.out.println(mt.retrieve("rr"));
+        System.out.println(mt.retrieve("lll"));
+        System.out.println(mt.retrieve("llr"));
+        System.out.println(mt.retrieve("lrr"));
+        System.out.println(mt.retrieve("rrr"));
     }
 }
